@@ -1,5 +1,8 @@
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
 import torch
 import torch.nn as nn
+from torch.autograd import Variable
 from torch.utils.data import Dataset, DataLoader
 
 input_size = 5
@@ -8,9 +11,9 @@ output_size = 2
 batch_size = 30
 data_size = 100
 
-device = torch.device("cuda:0" if torch.cuda.is_avaliable() else "cpu")
+# device = torch.device("cuda:0" if torch.cuda.is_avaliable() else "cpu")
 
-class RandomDataset(Datast):
+class RandomDataset(Dataset):
 
 	def __init__(self, size, length):
 		self.len = length
@@ -23,7 +26,7 @@ class RandomDataset(Datast):
 		return self.len
 
 
-rand_loader = DataLoader(dataset=RandomDatast(input_size, data_size), batch_size=batch_size, shuffle = True)
+rand_loader = DataLoader(dataset=RandomDataset(input_size, data_size), batch_size=batch_size, shuffle = True)
 
 
 class Model(nn.Module):
@@ -45,5 +48,18 @@ if torch.cuda.device_count() > 1:
 	print("Let's use", torch.cuda.device_count(), "GPUs!")
 	model = nn.DataParallel(model)
 
-model.to(device)
+if torch.cuda.is_available():
+	model.cuda()
+
+
+for data in rand_loader:
+	if torch.cuda.is_available():
+		input_var = Variable(data.cuda())
+	else:
+		input_var = Variable(data)
+
+	output = model(input_var)
+	print("Outside: input size", input_var.size(), 
+		"output_size", output.size())
+
 
